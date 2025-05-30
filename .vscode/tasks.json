@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-B", "build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake Build",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--", "-j2"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean Build Directory",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "build"],
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run ORB_SLAM3 EuRoC",
+      "type": "shell",
+      "command": "./Examples/Monocular-Inertial/mono_inertial_euroc",
+      "args": [
+        "./Vocabulary/ORBvoc.txt",
+        "./Examples/Monocular-Inertial/EuRoC.yaml",
+        "/media/psf/Home/VKR/SLAM_Camera/extra/MH01",
+        "./Examples/Monocular-Inertial/EuRoC_TimeStamps/MH01.txt",
+        "dataset-MH01_monoi"
+      ],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}

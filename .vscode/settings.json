@@ -1,0 +1,4 @@
+{
+  "cmake.generator": "Unix Makefiles",
+  "makefile.makePath": "/home/dev/bin/make-j2"
+}
