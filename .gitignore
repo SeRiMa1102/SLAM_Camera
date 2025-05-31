@@ -3,6 +3,7 @@ extra/
 .cache/
 .DS_Store
 build/
+lib/*
 # Unignore all with extensions
 # !*.*
 
