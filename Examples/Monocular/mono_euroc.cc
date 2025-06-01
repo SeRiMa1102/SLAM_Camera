@@ -34,7 +34,8 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
                 vector<string> &vstrImages, vector<double> &vTimeStamps);
 
 int main(int argc, char **argv) {
-  if (argc != 5) {
+  std::cout << "argc = " << argc << std::endl;
+  if (argc != 6) {
     cerr << endl
          << "Usage: ./mono_euroc path_to_vocabulary path_to_settings "
             "path_to_sequence_folder_1 path_to_times_file_1 "
