@@ -4,6 +4,15 @@ extra/
 .DS_Store
 build/
 lib/*
+.venv/
+MH01.pdf
+Examples/Monocular/mono_euroc
+Examples/Monocular/mono_kitti
+Examples/Monocular/mono_tum
+Examples/Monocular/mono_tum_vi
+Examples/Monocular-Inertial/mono_inertial_euroc
+f_dataset-MH01_mono.txt
+kf_dataset-MH01_mono.txt
 # Unignore all with extensions
 # !*.*
 

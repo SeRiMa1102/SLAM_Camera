@@ -5,9 +5,51 @@
       "label": "Clean Build Directory",
       "type": "shell",
       "command": "rm",
-      "args": ["-rf", "build"],
+      "args": ["-rf", ".venv", "build", "lib", "Thirdparty/DBoW2/build", "Thirdparty/DBoW2/lib", "Thirdparty/g2o/build", "Thirdparty/g2o/lib", "Thirdparty/Sophus/build", "Vocabulary/ORBvoc.txt"],
       "group": "none",
       "problemMatcher": []
+    },
+    {
+        "label": "Make",
+        "type": "shell",
+        "command": "./build.sh",
+        "args": [],
+        "options": {
+            "shell": {
+            "executable": "/bin/bash"
+            }
+        },
+        "group": "none",
+        "problemMatcher": []
+        },
+
+    {
+      "label": "Run ORB_SLAM3 Mono",
+      "type": "shell",
+      "command": "./Examples/Monocular/mono_euroc",
+      "args": [
+        "./Vocabulary/ORBvoc.txt",
+        "./Examples/Monocular/EuRoC.yaml",
+        "./extra/MH01",
+        "./Examples/Monocular/EuRoC_TimeStamps/MH01.txt",
+        "dataset-MH01_mono"
+      ],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
     },
     {
       "label": "Run ORB_SLAM3 EuRoC",
@@ -16,7 +58,7 @@
       "args": [
         "./Vocabulary/ORBvoc.txt",
         "./Examples/Monocular-Inertial/EuRoC.yaml",
-        "/media/psf/Home/VKR/SLAM_Camera/extra/MH01",
+        "./extra/MH01",
         "./Examples/Monocular-Inertial/EuRoC_TimeStamps/MH01.txt",
         "dataset-MH01_monoi"
       ],
@@ -35,6 +77,16 @@
         "reveal": "always",
         "focus": false,
         "panel": "shared"
+      }
+    },
+    {
+      "label": "Run ATE Evaluation",
+      "type": "shell",
+      "command": "source .venv/bin/activate && python3 evaluation/evaluate_ate_scale.py evaluation/Ground_truth/EuRoC_left_cam/MH01_GT.txt f_dataset-MH01_mono.txt --plot MH01.pdf --verbose2 --verbose",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
       }
     }
   ]

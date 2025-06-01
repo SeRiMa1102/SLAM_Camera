@@ -46,57 +46,63 @@ import numpy
 import argparse
 import associate
 
-def align(model,data):
-    """Align two trajectories using the method of Horn (closed-form).
-    
-    Input:
-    model -- first trajectory (3xn)
-    data -- second trajectory (3xn)
-    
-    Output:
-    rot -- rotation matrix (3x3)
-    trans -- translation vector (3x1)
-    trans_error -- translational error per point (1xn)
+import numpy as np
+
+def align(model, data):
     """
+    Align two trajectories using the method of Horn (closed-form).
 
+    Args:
+        model (np.ndarray): estimated trajectory, shape (3, N)
+        data (np.ndarray): ground truth trajectory, shape (3, N)
 
-    numpy.set_printoptions(precision=3,suppress=True)
-    model_zerocentered = model - model.mean(1)
-    data_zerocentered = data - data.mean(1)
-    
-    W = numpy.zeros( (3,3) )
-    for column in range(model.shape[1]):
-        W += numpy.outer(model_zerocentered[:,column],data_zerocentered[:,column])
-    U,d,Vh = numpy.linalg.linalg.svd(W.transpose())
-    S = numpy.matrix(numpy.identity( 3 ))
-    if(numpy.linalg.det(U) * numpy.linalg.det(Vh)<0):
-        S[2,2] = -1
-    rot = U*S*Vh
+    Returns:
+        rot (np.ndarray): rotation matrix (3x3)
+        transGT (np.ndarray): translation vector (3x1), with scale
+        trans_errorGT (np.ndarray): translation error (with scale)
+        trans (np.ndarray): translation vector (3x1), without scale
+        trans_error (np.ndarray): translation error (no scale)
+        s (float): scale factor
+    """
+    np.set_printoptions(precision=3, suppress=True)
 
-    rotmodel = rot*model_zerocentered
-    dots = 0.0
-    norms = 0.0
+    # Центрирование траекторий
+    model_mean = model.mean(axis=1, keepdims=True)
+    data_mean = data.mean(axis=1, keepdims=True)
+    model_zerocentered = model - model_mean
+    data_zerocentered = data - data_mean
 
-    for column in range(data_zerocentered.shape[1]):
-        dots += numpy.dot(data_zerocentered[:,column].transpose(),rotmodel[:,column])
-        normi = numpy.linalg.norm(model_zerocentered[:,column])
-        norms += normi*normi
+    # Ковариационная матрица
+    W = model_zerocentered @ data_zerocentered.T
+    U, _, Vt = np.linalg.svd(W.T)
 
-    s = float(dots/norms)    
-    
-    transGT = data.mean(1) - s*rot * model.mean(1)
-    trans = data.mean(1) - rot * model.mean(1)
+    S = np.eye(3)
+    if np.linalg.det(U @ Vt) < 0:
+        S[2, 2] = -1
 
-    model_alignedGT = s*rot * model + transGT
-    model_aligned = rot * model + trans
+    rot = U @ S @ Vt
 
+    # Масштаб
+    rotmodel = rot @ model_zerocentered
+    dots = np.sum(data_zerocentered * rotmodel)
+    norms = np.sum(model_zerocentered ** 2)
+    s = float(dots / norms)
+
+    # Трансляции
+    transGT = data_mean - s * rot @ model_mean
+    trans = data_mean - rot @ model_mean
+
+    # Выравнивание
+    model_alignedGT = s * (rot @ model) + transGT
+    model_aligned = rot @ model + trans
+
+    # Ошибки
     alignment_errorGT = model_alignedGT - data
     alignment_error = model_aligned - data
+    trans_errorGT = numpy.linalg.norm(alignment_errorGT, axis=0)
+    trans_error = numpy.linalg.norm(alignment_error, axis=0)
 
-    trans_errorGT = numpy.sqrt(numpy.sum(numpy.multiply(alignment_errorGT,alignment_errorGT),0)).A[0]
-    trans_error = numpy.sqrt(numpy.sum(numpy.multiply(alignment_error,alignment_error),0)).A[0]
-        
-    return rot,transGT,trans_errorGT,trans,trans_error, s
+    return rot, transGT, trans_errorGT, trans, trans_error, s
 
 def plot_traj(ax,stamps,traj,style,color,label):
     """
@@ -129,6 +135,8 @@ def plot_traj(ax,stamps,traj,style,color,label):
     if len(x)>0:
         ax.plot(x,y,style,color=color,label=label)
             
+def plot_traj_3d(ax, stamps, xyz, style, color, label):
+    ax.plot(xyz[0], xyz[1], xyz[2], style, color=color, label=label)
 
 if __name__=="__main__":
     # parse command line
@@ -153,45 +161,51 @@ if __name__=="__main__":
     matches = associate.associate(first_list, second_list,float(args.offset),float(args.max_difference))    
     if len(matches)<2:
         sys.exit("Couldn't find matching timestamp pairs between groundtruth and estimated trajectory! Did you choose the correct sequence?")
-    first_xyz = numpy.matrix([[float(value) for value in first_list[a][0:3]] for a,b in matches]).transpose()
-    second_xyz = numpy.matrix([[float(value)*float(args.scale) for value in second_list[b][0:3]] for a,b in matches]).transpose()
-    dictionary_items = second_list.items()
-    sorted_second_list = sorted(dictionary_items)
+    # Преобразование матчей в массивы (3, N)
+    first_xyz = np.array([[float(value) for value in first_list[a][0:3]] for a, b in matches]).T
+    second_xyz = np.array([[float(value) * float(args.scale) for value in second_list[b][0:3]] for a, b in matches]).T
 
-    second_xyz_full = numpy.matrix([[float(value)*float(args.scale) for value in sorted_second_list[i][1][0:3]] for i in range(len(sorted_second_list))]).transpose() # sorted_second_list.keys()]).transpose()
-    rot,transGT,trans_errorGT,trans,trans_error, scale = align(second_xyz,first_xyz)
+    # Отсортированный список
+    sorted_second_list = sorted(second_list.items())
+    second_xyz_full = np.array([[float(value) * float(args.scale) for value in values[0:3]]
+                                for _, values in sorted_second_list]).T
+
+    # Выравнивание
+    rot, transGT, trans_errorGT, trans, trans_error, scale = align(second_xyz, first_xyz)
     
-    second_xyz_aligned = scale * rot * second_xyz + trans
-    second_xyz_notscaled = rot * second_xyz + trans
-    second_xyz_notscaled_full = rot * second_xyz_full + trans
-    first_stamps = first_list.keys()
-    first_stamps.sort()
-    first_xyz_full = numpy.matrix([[float(value) for value in first_list[b][0:3]] for b in first_stamps]).transpose()
-    
-    second_stamps = second_list.keys()
-    second_stamps.sort()
-    second_xyz_full = numpy.matrix([[float(value)*float(args.scale) for value in second_list[b][0:3]] for b in second_stamps]).transpose()
-    second_xyz_full_aligned = scale * rot * second_xyz_full + trans
+    # Трансформация всех траекторий
+    second_xyz_aligned = scale * (rot @ second_xyz) + trans
+    second_xyz_notscaled = rot @ second_xyz + trans
+    second_xyz_notscaled_full = rot @ second_xyz_full + trans
+
+    # Подготовка полных координат (3, N)
+    first_stamps = sorted(first_list.keys())
+    first_xyz_full = np.array([[float(value) for value in first_list[b][0:3]] for b in first_stamps]).T
+
+    second_stamps = sorted(second_list.keys())
+    second_xyz_full = np.array([[float(value) * float(args.scale) for value in second_list[b][0:3]] for b in second_stamps]).T
+    second_xyz_full_aligned = scale * (rot @ second_xyz_full) + transGT + np.array([[1], [1], [0]])
+
     
     if args.verbose:
-        print "compared_pose_pairs %d pairs"%(len(trans_error))
+        print("compared_pose_pairs %d pairs"%(len(trans_error)))
 
-        print "absolute_translational_error.rmse %f m"%numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error))
-        print "absolute_translational_error.mean %f m"%numpy.mean(trans_error)
-        print "absolute_translational_error.median %f m"%numpy.median(trans_error)
-        print "absolute_translational_error.std %f m"%numpy.std(trans_error)
-        print "absolute_translational_error.min %f m"%numpy.min(trans_error)
-        print "absolute_translational_error.max %f m"%numpy.max(trans_error)
-        print "max idx: %i" %numpy.argmax(trans_error)
+        print("absolute_translational_error.rmse %f m"%numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)))
+        print("absolute_translational_error.mean %f m"%numpy.mean(trans_error))
+        print("absolute_translational_error.median %f m"%numpy.median(trans_error))
+        print("absolute_translational_error.std %f m"%numpy.std(trans_error))
+        print("absolute_translational_error.min %f m"%numpy.min(trans_error))
+        print("absolute_translational_error.max %f m"%numpy.max(trans_error))
+        print("max idx: %i" %numpy.argmax(trans_error))
     else:
-        # print "%f, %f " % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)),  scale)
-        # print "%f,%f" % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)),  scale)
-        print "%f,%f,%f" % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)), scale, numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT)))
-        # print "%f" % len(trans_error)
+        print("%f, %f " % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)),  scale))
+        print("%f,%f" % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)),  scale))
+        print("%f,%f,%f" % (numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)), scale, numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT))))
+        print("%f" % len(trans_error))
     if args.verbose2:
-        print "compared_pose_pairs %d pairs"%(len(trans_error))
-        print "absolute_translational_error.rmse %f m"%numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error))
-        print "absolute_translational_errorGT.rmse %f m"%numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT))
+        print("compared_pose_pairs %d pairs"%(len(trans_error)))
+        print("absolute_translational_error.rmse %f m"%numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error)))
+        print("absolute_translational_errorGT.rmse %f m"%numpy.sqrt(numpy.dot(trans_errorGT,trans_errorGT) / len(trans_errorGT)))
 
     if args.save_associations:
         file = open(args.save_associations,"w")
@@ -204,26 +218,44 @@ if __name__=="__main__":
         file.close()
 
     if args.plot:
-        import matplotlib
-        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import matplotlib.pylab as pylab
-        from matplotlib.patches import Ellipse
+        from mpl_toolkits.mplot3d import Axes3D  # обязательно, чтобы работало 3D
+        import numpy as np
+
+        # Создание 3D-фигуры
         fig = plt.figure()
-        ax = fig.add_subplot(111)
-        plot_traj(ax,first_stamps,first_xyz_full.transpose().A,'-',"black","ground truth")
-        plot_traj(ax,second_stamps,second_xyz_full_aligned.transpose().A,'-',"blue","estimated")
-        label="difference"
-        for (a,b),(x1,y1,z1),(x2,y2,z2) in zip(matches,first_xyz.transpose().A,second_xyz_aligned.transpose().A):
-            ax.plot([x1,x2],[y1,y2],'-',color="red",label=label)
-            label=""
-            
-        ax.legend()
-            
+        ax = fig.add_subplot(111, projection='3d')  # 3D-проекция
+
+        # Функция для отображения траектории в 3D
+        def plot_traj(ax, stamps, xyz, style, color, label):
+            ax.plot(xyz[0], xyz[1], xyz[2], style, color=color, label=label)
+
+        # Построение траекторий 
+        # plot_traj(ax, first_stamps, first_xyz_full.A, '-', "black", "ground truth")
+        # plot_traj(ax, first_stamps, first_xyz_full.transpose().A, '-', "black", "ground truth")
+        # plot_traj(ax, second_stamps, second_xyz_full_aligned.A, '-', "blue", "estimated")
+        plot_traj(ax, first_stamps, first_xyz_full, '-', "black", "ground truth")
+        plot_traj(ax, second_stamps, second_xyz_full_aligned, '-', "blue", "estimated")
+
+        # plot_traj(ax, second_stamps, second_xyz_full_aligned.transpose().A, '-', "blue", "estimated")
+        # print(first_xyz_full)
+
+        # Разности между точками
+        # label = "difference"
+        # for (a, b), (x1, y1, z1), (x2, y2, z2) in zip(matches, first_xyz.transpose().A, second_xyz_aligned.transpose().A):
+        #     ax.plot([x1, x2], [y1, y2], [z1, z2], '-', color="red", label=label)
+        #     label = ""  # чтобы не дублировать в легенде
+
+        # Подписи и оформление
         ax.set_xlabel('x [m]')
         ax.set_ylabel('y [m]')
-        plt.axis('equal')
-        plt.savefig(args.plot,format="pdf")
+        ax.set_zlabel('z [m]')
+        ax.legend()
+
+        # Сохранение (если args.plot задан) и отображение
+        plt.savefig(args.plot, format="pdf")  # Раскомментируй, если нужно сохранить
+        plt.show()
+
 
 
         

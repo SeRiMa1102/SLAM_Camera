@@ -1,7 +1,6 @@
 {
-    "cmake.generator": "Unix Makefiles",
-    "makefile.makePath": "/home/dev/bin/make-j2",
     "editor.tabSize": 4,
     "editor.detectIndentation": false,
-    "cmake.parallelJobs": 1
+    "cmake.configureOnEdit": false,
+    "cmake.configureOnOpen": false
 }
