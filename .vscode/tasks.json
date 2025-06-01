@@ -51,34 +51,34 @@
         "panel": "shared"
       }
     },
-    {
-      "label": "Run ORB_SLAM3 EuRoC",
-      "type": "shell",
-      "command": "./Examples/Monocular-Inertial/mono_inertial_euroc",
-      "args": [
-        "./Vocabulary/ORBvoc.txt",
-        "./Examples/Monocular-Inertial/EuRoC.yaml",
-        "./extra/MH01",
-        "./Examples/Monocular-Inertial/EuRoC_TimeStamps/MH01.txt",
-        "dataset-MH01_monoi"
-      ],
-      "options": {
-        "env": {
-          "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
-        }
-      },
-      "group": {
-        "kind": "test",
-        "isDefault": false
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      }
-    },
+    // {
+    //   "label": "Run ORB_SLAM3 EuRoC",
+    //   "type": "shell",
+    //   "command": "./Examples/Monocular-Inertial/mono_inertial_euroc",
+    //   "args": [
+    //     "./Vocabulary/ORBvoc.txt",
+    //     "./Examples/Monocular-Inertial/EuRoC.yaml",
+    //     "./extra/MH01",
+    //     "./Examples/Monocular-Inertial/EuRoC_TimeStamps/MH01.txt",
+    //     "dataset-MH01_monoi"
+    //   ],
+    //   "options": {
+    //     "env": {
+    //       "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
+    //     }
+    //   },
+    //   "group": {
+    //     "kind": "test",
+    //     "isDefault": false
+    //   },
+    //   "problemMatcher": [],
+    //   "presentation": {
+    //     "echo": true,
+    //     "reveal": "always",
+    //     "focus": false,
+    //     "panel": "shared"
+    //   }
+    // },
     {
       "label": "Run ATE Evaluation",
       "type": "shell",
