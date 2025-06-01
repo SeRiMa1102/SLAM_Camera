@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  const int num_seq = (argc - 3) / 2;
+  const int num_seq = 1;
   cout << "num_seq = " << num_seq << endl;
   bool bFileName = (((argc - 3) % 2) == 1);
   string file_name;
@@ -55,26 +55,25 @@ int main(int argc, char **argv) {
   }
 
   // Load all sequences:
-  int seq;
-  vector<vector<string>> vstrImageFilenames;
-  vector<vector<double>> vTimestampsCam;
-  vector<int> nImages;
+  int seq = 0;
+  vector<string> vstrImageFilenames;
+  vector<double> vTimestampsCam;
+  int nImages;
 
-  vstrImageFilenames.resize(num_seq);
-  vTimestampsCam.resize(num_seq);
-  nImages.resize(num_seq);
+  //   vstrImageFilenames.resize(num_seq);
+  //   vTimestampsCam.resize(num_seq);
+  //   nImages.resize(num_seq);
 
   int tot_images = 0;
-  for (seq = 0; seq < num_seq; seq++) {
-    cout << "Loading images for sequence " << seq << "...";
-    LoadImages(string(argv[(2 * seq) + 3]) + "/mav0/cam0/data",
-               string(argv[(2 * seq) + 4]), vstrImageFilenames[seq],
-               vTimestampsCam[seq]);
-    cout << "LOADED!" << endl;
+  //   for (seq = 0; seq < num_seq; seq++) {
+  cout << "Loading images for sequence " << seq << "...";
+  LoadImages(string(argv[3]) + "/mav0/cam0/data", string(argv[4]),
+             vstrImageFilenames, vTimestampsCam);
+  cout << "LOADED!" << endl;
 
-    nImages[seq] = vstrImageFilenames[seq].size();
-    tot_images += nImages[seq];
-  }
+  nImages = vstrImageFilenames.size();
+  tot_images += nImages;
+  //   }
 
   // Vector for tracking time statistics
   vector<float> vTimesTrack;
@@ -93,17 +92,17 @@ int main(int argc, char **argv) {
   double t_resize = 0.f;
   double t_track = 0.f;
 
-  for (seq = 0; seq < num_seq; seq++) {
+  for (seq = 0; seq < 1; seq++) {
 
     // Main loop
     cv::Mat im;
     int proccIm = 0;
-    for (int ni = 0; ni < nImages[seq]; ni++, proccIm++) {
+    for (int ni = 0; ni < nImages; ni++, proccIm++) {
 
       // Read image from file
-      im = cv::imread(vstrImageFilenames[seq][ni],
+      im = cv::imread(vstrImageFilenames[ni],
                       cv::IMREAD_UNCHANGED); //,CV_LOAD_IMAGE_UNCHANGED);
-      double tframe = vTimestampsCam[seq][ni];
+      double tframe = vTimestampsCam[ni];
 
       if (im.empty()) {
         cerr << endl
@@ -158,10 +157,10 @@ int main(int argc, char **argv) {
 
       // Wait to load the next frame
       double T = 0;
-      if (ni < nImages[seq] - 1)
-        T = vTimestampsCam[seq][ni + 1] - tframe;
+      if (ni < nImages - 1)
+        T = vTimestampsCam[ni + 1] - tframe;
       else if (ni > 0)
-        T = tframe - vTimestampsCam[seq][ni - 1];
+        T = tframe - vTimestampsCam[ni - 1];
 
       // std::cout << "T: " << T << std::endl;
       // std::cout << "ttrack: " << ttrack << std::endl;
