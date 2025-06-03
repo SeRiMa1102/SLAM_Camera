@@ -26,8 +26,9 @@
     {
       "label": "Run ORB_SLAM3 Mono",
       "type": "shell",
-      "command": "./Examples/Monocular/mono_euroc",
+      "command": "time",
       "args": [
+        "./Examples/Monocular/mono_euroc",
         "./Vocabulary/ORBvoc.txt",
         "./Examples/Monocular/EuRoC.yaml",
         "./extra/MH01",
