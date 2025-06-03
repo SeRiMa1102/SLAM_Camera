@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Clean Build Directory",
+      "label": "Clean",
       "type": "shell",
       "command": "rm",
       "args": ["-rf", ".venv", "build", "lib", "Thirdparty/DBoW2/build", "Thirdparty/DBoW2/lib", "Thirdparty/g2o/build", "Thirdparty/g2o/lib", "Thirdparty/Sophus/build", "Vocabulary/ORBvoc.txt"],
@@ -21,8 +21,38 @@
         },
         "group": "none",
         "problemMatcher": []
+    },
+    {
+      "label": "Run Own",
+      "type": "shell",
+      "command": "time",
+      "args": [
+        "./build/camera_stabilization",
+        "./Vocabulary/ORBvoc.txt",
+        "./calib.yaml",
+        "./extra/video.mp4",
+        "dataset-own"
+      ],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
         },
-
+        "statusbar": {
+            "hide" : false
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
     {
       "label": "Run ORB_SLAM3 Mono",
       "type": "shell",
@@ -38,6 +68,9 @@
       "options": {
         "env": {
           "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
+        },
+        "statusbar": {
+            "hide" : true
         }
       },
       "group": {
@@ -52,36 +85,28 @@
         "panel": "shared"
       }
     },
-    // {
-    //   "label": "Run ORB_SLAM3 EuRoC",
-    //   "type": "shell",
-    //   "command": "./Examples/Monocular-Inertial/mono_inertial_euroc",
-    //   "args": [
-    //     "./Vocabulary/ORBvoc.txt",
-    //     "./Examples/Monocular-Inertial/EuRoC.yaml",
-    //     "./extra/MH01",
-    //     "./Examples/Monocular-Inertial/EuRoC_TimeStamps/MH01.txt",
-    //     "dataset-MH01_monoi"
-    //   ],
-    //   "options": {
-    //     "env": {
-    //       "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
-    //     }
-    //   },
-    //   "group": {
-    //     "kind": "test",
-    //     "isDefault": false
-    //   },
-    //   "problemMatcher": [],
-    //   "presentation": {
-    //     "echo": true,
-    //     "reveal": "always",
-    //     "focus": false,
-    //     "panel": "shared"
-    //   }
-    // },
     {
-      "label": "Run ATE Evaluation",
+      "label": "Eva Own",
+      "options": {
+        "statusbar": {
+            "hide" : false
+        }
+      },
+      "type": "shell",
+      "command": "source .venv/bin/activate && python3 evaluation/own_traj.py f_dataset-own.txt --plot Own.pdf",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Eva",
+      "options": {
+        "statusbar": {
+            "hide" : true
+        }
+      },
       "type": "shell",
       "command": "source .venv/bin/activate && python3 evaluation/evaluate_ate_scale.py evaluation/Ground_truth/EuRoC_left_cam/MH01_GT.txt f_dataset-MH01_mono.txt --plot MH01.pdf --verbose2 --verbose",
       "problemMatcher": [],

@@ -7,170 +7,86 @@
 
 #include <System.h>
 
-using namespace std;
+int main(int argc, char** argv)
+{
+    std::cout << "argc = " << argc << std::endl;
+    if (argc != 5) {
+        cerr << endl
+             << "Usage: ./camera_stabilization path_to_vocabulary path_to_settings "
+                "video.mp4"
+                "trajectory_file_name"
+             << endl;
+        return 1;
+    }
 
-void LoadImages(const string &strImagePath, const string &strPathTimes,
-                vector<string> &vstrImages, vector<double> &vTimeStamps);
+    cv::VideoCapture cap(argv[argc - 2]);
+    if (!cap.isOpened()) {
+        std::cerr << "Ошибка: не удалось открыть видео" << std::endl;
+        return -1;
+    }
 
-int main(int argc, char **argv) {
-  std::cout << "argc = " << argc << std::endl;
-  if (argc != 6) {
-    cerr << endl
-         << "Usage: ./mono_euroc path_to_vocabulary path_to_settings "
-            "path_to_sequence_folder_1 path_to_times_file_1 "
-            "trajectory_file_name"
-         << endl;
-    return 1;
-  }
-
-  const int num_seq = 1;
-  cout << "num_seq = " << num_seq << endl;
-  bool bFileName = (((argc - 3) % 2) == 1);
-  string file_name;
-  if (bFileName) {
-    file_name = string(argv[argc - 1]);
+    string file_name = string(argv[argc - 1]);
     cout << "file name: " << file_name << endl;
-  }
 
-  // Load all sequences:
-  int seq = 0;
-  vector<string> vstrImageFilenames;
-  vector<double> vTimestampsCam;
-  int nImages;
+    cout << endl
+         << "-------" << endl;
+    cout.precision(17);
 
-  int tot_images = 0;
-  cout << "Loading images for sequence ...";
-  LoadImages(string(argv[3]) + "/mav0/cam0/data", string(argv[4]),
-             vstrImageFilenames, vTimestampsCam);
-  cout << "LOADED!" << endl;
+    int fps = 20;
+    float dT = 1.f / fps;
 
-  nImages = vstrImageFilenames.size();
-  tot_images += nImages;
+    // Create SLAM system. It initializes all system threads and gets ready to
+    // process frames.
+    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, false);
+    float imageScale = SLAM.GetImageScale();
 
-  // Vector for tracking time statistics
-  vector<float> vTimesTrack;
-  vTimesTrack.resize(tot_images);
+    std::cout << "imageScale = " << imageScale << std::endl;
 
-  cout << endl << "-------" << endl;
-  cout.precision(17);
+    double time_to_track = 0.f;
 
-  int fps = 20;
-  float dT = 1.f / fps;
-  // Create SLAM system. It initializes all system threads and gets ready to
-  // process frames.
-  ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, false);
-  float imageScale = SLAM.GetImageScale();
+    // Main loop
+    cv::Mat im;
+    while (true) {
+        // Read image from file
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        cap >> im;
+        if (im.empty()) {
+            std::cout << "End of file\n";
+            break;
+        }
 
-  double t_resize = 0.f;
-  double t_track = 0.f;
+        if (imageScale != 1.f) {
+            int width = im.cols * imageScale;
+            int height = im.rows * imageScale;
+            cv::resize(im, im, cv::Size(width, height));
+        }
 
-  // Main loop
-  cv::Mat im;
-  int proccIm = 0;
-  for (int ni = 0; ni < nImages; ni++, proccIm++) {
+        // Pass the image to the SLAM system
+        cout << "time_to_track = " << time_to_track << endl;
+        std::cout << "Frame size: " << im.cols << "x" << im.rows << std::endl;
+        SLAM.TrackMonocular(im, time_to_track);
+        cout << "Make monocular" << std::endl;
 
-    // Read image from file
-    im = cv::imread(vstrImageFilenames[ni],
-                    cv::IMREAD_UNCHANGED); //,CV_LOAD_IMAGE_UNCHANGED);
-    double tframe = vTimestampsCam[ni];
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-    if (im.empty()) {
-      cerr << endl
-           << "Failed to load image at: " << vstrImageFilenames[seq][ni]
-           << endl;
-      return 1;
+        double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+                            .count();
+
+        if (ttrack < dT) {
+
+            time_to_track += dT;
+        } else {
+            time_to_track += ttrack;
+        }
     }
+    // Stop all threads
+    SLAM.Shutdown();
 
-    if (imageScale != 1.f) {
-#ifdef REGISTER_TIMES
-      std::chrono::steady_clock::time_point t_Start_Resize =
-          std::chrono::steady_clock::now();
-#endif
-      int width = im.cols * imageScale;
-      int height = im.rows * imageScale;
-      cv::resize(im, im, cv::Size(width, height));
-#ifdef REGISTER_TIMES
-      std::chrono::steady_clock::time_point t_End_Resize =
-          std::chrono::steady_clock::now();
-      t_resize =
-          std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
-              t_End_Resize - t_Start_Resize)
-              .count();
-      SLAM.InsertResizeTime(t_resize);
-#endif
-    }
-
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
-    // Pass the image to the SLAM system
-    // cout << "tframe = " << tframe << endl;
-    SLAM.TrackMonocular(im, tframe); // TODO change to monocular_inertial
-
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-#ifdef REGISTER_TIMES
-    t_track =
-        t_resize +
-        std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
-            t2 - t1)
-            .count();
-    SLAM.InsertTrackTime(t_track);
-#endif
-
-    double ttrack =
-        std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
-            .count();
-
-    vTimesTrack[ni] = ttrack;
-
-    // Wait to load the next frame
-    double T = 0;
-    if (ni < nImages - 1)
-      T = vTimestampsCam[ni + 1] - tframe;
-    else if (ni > 0)
-      T = tframe - vTimestampsCam[ni - 1];
-
-    // std::cout << "T: " << T << std::endl;
-    // std::cout << "ttrack: " << ttrack << std::endl;
-
-    if (ttrack < T) {
-      // std::cout << "usleep: " << (dT-ttrack) << std::endl;
-      usleep((T - ttrack) * 1e6); // 1e6
-    }
-  }
-  // Stop all threads
-  SLAM.Shutdown();
-
-  // Save camera trajectory
-  if (bFileName) {
+    // Save camera trajectory
     const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
     const string f_file = "f_" + string(argv[argc - 1]) + ".txt";
     SLAM.SaveTrajectoryEuRoC(f_file);
     SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-  } else {
-    SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
-    SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-  }
 
-  return 0;
-}
-
-void LoadImages(const string &strImagePath, const string &strPathTimes,
-                vector<string> &vstrImages, vector<double> &vTimeStamps) {
-  ifstream fTimes;
-  fTimes.open(strPathTimes.c_str());
-  vTimeStamps.reserve(5000);
-  vstrImages.reserve(5000);
-  while (!fTimes.eof()) {
-    string s;
-    getline(fTimes, s);
-    if (!s.empty()) {
-      stringstream ss;
-      ss << s;
-      vstrImages.push_back(strImagePath + "/" + ss.str() + ".png");
-      double t;
-      ss >> t;
-      vTimeStamps.push_back(t * 1e-9);
-    }
-  }
+    return 0;
 }

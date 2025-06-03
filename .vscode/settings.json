@@ -2,5 +2,7 @@
     "editor.tabSize": 4,
     "editor.detectIndentation": false,
     "cmake.configureOnEdit": false,
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+    "editor.formatOnSave": true
 }
