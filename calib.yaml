@@ -1,15 +1,52 @@
 %YAML:1.0
----
-camera_matrix: !!opencv-matrix
-   rows: 3
-   cols: 3
-   dt: d
-   data: [ 2.8565830492313785e+03, 0., 1.4868424160401935e+03, 0.,
-       2.8559075838281428e+03, 2.0094365668874730e+03, 0., 0., 1. ]
-distortion_coefficients: !!opencv-matrix
-   rows: 1
-   cols: 5
-   dt: d
-   data: [ 2.6228219034991052e-01, -1.0449294154613786e+00,
-       -3.7276707062339088e-03, 1.4916871537274787e-03,
-       1.3202722281353145e+00 ]
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters.
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 2856.5830492313785
+Camera.fy: 2855.9075838281428
+Camera.cx: 1486.8424160401935
+Camera.cy: 2009.436566887473
+
+Camera.k1: 0.26228219034991052
+Camera.k2: -1.0449294154613786
+Camera.p1: -0.0037276707062339088
+Camera.p2: 0.0014916871537274787
+Camera.k3: 1.3202722281353145
+
+Camera.width: 3024
+Camera.height: 4032
+
+Camera.newWidth: 350
+Camera.newHeight: 600
+
+# Camera frames per second 
+Camera.fps: 20
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
