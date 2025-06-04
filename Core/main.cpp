@@ -71,6 +71,19 @@ int main(int argc, char** argv)
         SLAM.TrackMonocular(im, timestamp);
 
         cout << "timestamp = " << timestamp << ", SLAM.GetTrackingState() = " << SLAM.GetTrackingState() << endl;
+        Sophus::SE3f pose = SLAM.GetTracking()->mCurrentFrame.GetPose();
+        // Eigen::Matrix3f R = pose.rotationMatrix(); // 3x3 rotation matrix
+        // Eigen::Vector3f t = pose.translation(); // translation vector
+
+        // std::cout << "Pose rotation matrix R:\n"
+        //           << R << std::endl;
+        // std::cout << "Pose translation vector t:\n"
+        //           << t.transpose() << std::endl;
+
+        // Если хочешь вывести как 4x4 матрицу:
+        Eigen::Matrix4f T = pose.matrix();
+        std::cout << "Full transformation matrix T (4x4):\n"
+                  << T << std::endl;
         // SLAM.TrackMonocular(im, time_to_track);
         // cout << "Make monocular" << std::endl;
 
