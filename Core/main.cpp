@@ -32,7 +32,7 @@ int main(int argc, char** argv)
          << "-------" << endl;
     cout.precision(17);
 
-    int fps = 20;
+    int fps = 30;
     float dT = 1.f / fps;
 
     // Create SLAM system. It initializes all system threads and gets ready to
@@ -63,9 +63,9 @@ int main(int argc, char** argv)
 
         // Pass the image to the SLAM system
         cout << "time_to_track = " << time_to_track << endl;
-        std::cout << "Frame size: " << im.cols << "x" << im.rows << std::endl;
+        // std::cout << "Frame size: " << im.cols << "x" << im.rows << std::endl;
         SLAM.TrackMonocular(im, time_to_track);
-        cout << "Make monocular" << std::endl;
+        // cout << "Make monocular" << std::endl;
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

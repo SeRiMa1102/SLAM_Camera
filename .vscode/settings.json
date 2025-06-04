@@ -4,5 +4,8 @@
     "cmake.configureOnEdit": false,
     "cmake.configureOnOpen": false,
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "terminal.integrated.scrollback": 100000,
+    "workbench.editor.enablePreview": false,
+    "editor.rename.enablePreview": false
 }

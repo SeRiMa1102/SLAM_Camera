@@ -2,7 +2,7 @@
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install matplotlib numpy
+pip install matplotlib numpy scipy
 
 echo "Configuring and building Thirdparty/DBoW2 ..."
 

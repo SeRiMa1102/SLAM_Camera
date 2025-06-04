@@ -136,11 +136,11 @@ target_link_libraries(${PROJECT_NAME}
 #         Examples/Monocular-Inertial/mono_inertial_euroc.cc)
 # target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
 
-add_executable(mono_euroc
-        Examples/Monocular/mono_euroc.cc)
-target_link_libraries(mono_euroc ${PROJECT_NAME})
+# add_executable(mono_euroc
+#         Examples/Monocular/mono_euroc.cc)
+# target_link_libraries(mono_euroc ${PROJECT_NAME})
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
