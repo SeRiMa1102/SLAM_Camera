@@ -8,22 +8,22 @@ File.version: "1.0"
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera1.fx: 2856.5830492313785
-Camera1.fy: 2855.9075838281428
-Camera1.cx: 1486.8424160401935
-Camera1.cy: 2009.436566887473
+Camera1.fx: 1314.6763514432344
+Camera1.fy: 1317.3530828963840
+Camera1.cx: 956.85143556812943
+Camera1.cy: 525.93158727502214
 
-Camera1.k1: 0.26228219034991052
-Camera1.k2: -1.0449294154613786
-Camera1.p1: -0.0037276707062339088
-Camera1.p2: 0.0014916871537274787
-Camera1.k3: 1.3202722281353145
+Camera1.k1: 0.24373242882965748
+Camera1.k2: -0.61997457381556464
+Camera1.k3: 0.027064701866580818  
+Camera1.p1: -0.0055830075247766588
+Camera1.p2: 0.00038805152920951160
 
 Camera.width: 1080
 Camera.height: 1920
 
-Camera.newWidth: 540
-Camera.newHeight: 960
+Camera.newWidth: 1080
+Camera.newHeight: 1920
 
 # Camera frames per second 
 Camera.fps: 30
@@ -36,13 +36,13 @@ Camera.RGB: 1
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 1000
+ORBextractor.nFeatures: 10000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
 ORBextractor.scaleFactor: 1.2
 
 # ORB Extractor: Number of levels in the scale pyramid	
-ORBextractor.nLevels: 8
+ORBextractor.nLevels: 10
 
 # ORB Extractor: Fast threshold
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.

@@ -16,19 +16,24 @@ int main(int argc, char** argv) {
     std::vector<std::vector<cv::Point2f>> imgpoints;
     std::vector<cv::Point3f> objp;
 
+    float square_size = 24.0f; // мм
+
     for (int i = 0; i < rows * cols; ++i)
-        objp.emplace_back(i % cols, i / cols, 0.0f);
+        objp.emplace_back((i % cols) * square_size, (i / cols) * square_size, 0.0f);
+
 
     cv::Size patternSize(cols, rows);
 
     for (const auto& entry : std::filesystem::directory_iterator(img_dir)) {
         cv::Mat img = cv::imread(entry.path().string(), cv::IMREAD_GRAYSCALE);
+        std::cout << img.cols << " " << img.rows << std::endl;
         if (img.empty()) continue;
 
         std::vector<cv::Point2f> corners;
         bool found = cv::findChessboardCorners(img, patternSize, corners);
 
         if (found) {
+            std::cout <<found << std::endl;
             cv::cornerSubPix(img, corners, cv::Size(11, 11), cv::Size(-1, -1),
                              cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.01));
             imgpoints.push_back(corners);

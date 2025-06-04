@@ -39,6 +39,7 @@ int main(int argc, char** argv)
     // process frames.
     ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, false);
     float imageScale = SLAM.GetImageScale();
+    // SLAM.ActivateLocalizationMode();
 
     std::cout << "imageScale = " << imageScale << std::endl;
 
@@ -46,6 +47,7 @@ int main(int argc, char** argv)
 
     // Main loop
     cv::Mat im;
+    size_t frame_id = 0;
     while (true) {
         // Read image from file
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -62,9 +64,14 @@ int main(int argc, char** argv)
         }
 
         // Pass the image to the SLAM system
-        cout << "time_to_track = " << time_to_track << endl;
+        // cout << "time_to_track = " << time_to_track << endl;
         // std::cout << "Frame size: " << im.cols << "x" << im.rows << std::endl;
-        SLAM.TrackMonocular(im, time_to_track);
+        double timestamp = frame_id++ * dT;
+
+        SLAM.TrackMonocular(im, timestamp);
+
+        cout << "timestamp = " << timestamp << ", SLAM.GetTrackingState() = " << SLAM.GetTrackingState() << endl;
+        // SLAM.TrackMonocular(im, time_to_track);
         // cout << "Make monocular" << std::endl;
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
