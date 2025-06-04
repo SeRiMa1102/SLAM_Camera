@@ -260,13 +260,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat& im, const double& timestamp,
             return Sophus::SE3f();
     }
 
-    if (mSensor != MONOCULAR && mSensor != IMU_MONOCULAR) {
-        cerr << "ERROR: you called TrackMonocular but input sensor was not set to "
-                "Monocular nor Monocular-Inertial."
-             << endl;
-        exit(-1);
-    }
-
     cv::Mat imToFeed = im.clone();
     if (settings_ && settings_->needToResize()) {
         cv::Mat resizedIm;
@@ -308,10 +301,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat& im, const double& timestamp,
             mbResetActiveMap = false;
         }
     }
-
-    if (mSensor == System::IMU_MONOCULAR)
-        for (size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
-            mpTracker->GrabImuData(vImuMeas[i_imu]);
 
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed, timestamp, filename);
 
