@@ -401,6 +401,93 @@ bool System::isShutDown()
     return mbShutDown;
 }
 
+int System::GetCurrentPose(Eigen::Quaternionf& qua_)
+{
+
+    qua_ = Eigen::Quaternionf(0, 0, 0, 0);
+
+    // cout << "SLAM.GetTrackingState() = " << this->GetTrackingState() << endl;
+    Tracking::eTrackingState state = static_cast<Tracking::eTrackingState>(GetTrackingState());
+    if (state < Tracking::eTrackingState::OK) {
+        return state;
+    }
+
+    Map* pBiggerMap = mpAtlas->GetCurrentMap();
+    vector<KeyFrame*> vpKFs = pBiggerMap->GetAllKeyFrames();
+    if (vpKFs.empty())
+        return -2;
+
+    sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+
+    Sophus::SE3f Twb;
+    Twb = vpKFs[0]->GetPoseInverse();
+
+    // Получаем последние элементы списков трекера
+    if (mpTracker->mlRelativeFramePoses.empty() || mpTracker->mlpReferences.empty() || mpTracker->mlFrameTimes.empty() || mpTracker->mlbLost.empty()) {
+        return -3;
+    }
+
+    // Frame pose is stored relative to its reference keyframe (which is optimized
+    // by BA and pose graph). We need to get first the keyframe pose and then
+    // concatenate the relative transformation. Frames not localized (tracking
+    // failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and
+    // a flag which is true when tracking failed (lbL).
+    auto lit = std::prev(mpTracker->mlRelativeFramePoses.end());
+    auto lRit = std::prev(mpTracker->mlpReferences.end());
+    auto lT = std::prev(mpTracker->mlFrameTimes.end());
+    auto lbL = std::prev(mpTracker->mlbLost.end());
+
+    // cout << "1" << endl;
+    if (*lbL)
+        return -4;
+
+    KeyFrame* pKF = *lRit;
+    // cout << "KF: " << pKF->mnId << endl;
+
+    Sophus::SE3f Trw;
+
+    // If the reference keyframe was culled, traverse the spanning tree to get a
+    // suitable keyframe.
+    if (!pKF)
+        return -5;
+
+    // cout << "2.5" << endl;
+
+    while (pKF->isBad()) {
+        // cout << " 2.bad" << endl;
+        Trw = Trw * pKF->mTcp;
+        pKF = pKF->GetParent();
+        // cout << "--Parent KF: " << pKF->mnId << endl;
+    }
+
+    if (!pKF || pKF->GetMap() != pBiggerMap) {
+        // cout << "--Parent KF is from another map" << endl;
+        return -6;
+    }
+
+    // cout << "3" << endl;
+
+    Trw = Trw * pKF->GetPose() * Twb; // Tcp*Tpw*Twb0=Tcb0 where b0 is the new world reference
+
+    // cout << "4" << endl;
+
+    Sophus::SE3f Twc = ((*lit) * Trw).inverse();
+    qua_ = Twc.unit_quaternion();
+    Eigen::Vector3f twc = Twc.translation();
+    std::cout << std::fixed;
+    std::cout << setprecision(6) << 1e9 * (*lT) << " " << qua_.x() << " " << qua_.y() << " "
+              << qua_.z() << " " << qua_.w() << endl;
+
+    // std::cout << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0)
+    //           << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " "
+    //           << q.z() << " " << q.w() << endl;
+
+    // cout << "5" << endl;
+    return state;
+}
+
 void System::SaveTrajectoryEuRoC(const string& filename)
 {
 

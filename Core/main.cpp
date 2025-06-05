@@ -5,7 +5,43 @@
 
 #include <opencv2/core/core.hpp>
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <System.h>
+#include <iostream>
+#include <vector>
+
+// Аргумент: вектор кватернионов
+Eigen::Quaternionf average_quaternions(const std::vector<Eigen::Quaternionf>& quats)
+{
+    if (quats.empty())
+        throw std::runtime_error("Empty quaternions!");
+
+    // Align signs
+    Eigen::Quaternionf q0 = quats[0];
+    std::vector<Eigen::Quaternionf> aligned_quats = quats;
+    for (size_t i = 0; i < aligned_quats.size(); ++i) {
+        if (q0.coeffs().dot(aligned_quats[i].coeffs()) < 0) {
+            aligned_quats[i].coeffs() *= -1.0f;
+        }
+    }
+
+    // Build A
+    Eigen::Matrix4f A = Eigen::Matrix4f::Zero();
+    for (const auto& q : aligned_quats) {
+        Eigen::Vector4f v = q.coeffs(); // [x, y, z, w]
+        A += v * v.transpose();
+    }
+    A /= aligned_quats.size();
+
+    // Eigenvector
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix4f> eigensolver(A);
+    Eigen::Vector4f avg_vec = eigensolver.eigenvectors().col(3); // max eigenvalue
+
+    Eigen::Quaternionf avg_quat(avg_vec(3), avg_vec(0), avg_vec(1), avg_vec(2)); // (w, x, y, z)
+    avg_quat.normalize();
+    return avg_quat;
+}
 
 int main(int argc, char** argv)
 {
@@ -44,6 +80,7 @@ int main(int argc, char** argv)
     std::cout << "imageScale = " << imageScale << std::endl;
 
     double time_to_track = 0.f;
+    std::vector<Eigen::Quaternionf> quats_;
 
     // Main loop
     cv::Mat im;
@@ -72,6 +109,11 @@ int main(int argc, char** argv)
 
         cout << "timestamp = " << timestamp << ", SLAM.GetTrackingState() = " << SLAM.GetTrackingState() << endl;
         Sophus::SE3f pose = SLAM.GetTracking()->mCurrentFrame.GetPose();
+        Eigen::Quaternionf q;
+        int result = SLAM.GetCurrentPose(q);
+        if (result > 1) {
+            quats_.push_back(q);
+        }
         // Eigen::Matrix3f R = pose.rotationMatrix(); // 3x3 rotation matrix
         // Eigen::Vector3f t = pose.translation(); // translation vector
 
@@ -81,7 +123,8 @@ int main(int argc, char** argv)
         //           << t.transpose() << std::endl;
 
         // Если хочешь вывести как 4x4 матрицу:
-        Eigen::Matrix4f T = pose.matrix();
+        Eigen::Matrix4f T
+            = pose.matrix();
         // std::cout << "Full transformation matrix T (4x4):\n"
         //           << T << std::endl;
         // SLAM.TrackMonocular(im, time_to_track);
@@ -107,6 +150,22 @@ int main(int argc, char** argv)
     const string f_file = "f_" + string(argv[argc - 1]) + ".txt";
     SLAM.SaveTrajectoryEuRoC(f_file);
     // SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
+
+    Eigen::Quaternionf resQ = average_quaternions(quats_);
+    std::cout << std::fixed;
+    std::cout
+        << "Size = " << quats_.size() << std::endl;
+
+    int i = 0;
+    for (const auto& q : quats_) {
+        std::cout << i++ << ": ";
+        std::cout << setprecision(6) << q.x() << " " << q.y() << " "
+                  << q.z() << " " << q.w() << endl;
+    }
+
+    std::cout << "Average quaternion = ";
+    std::cout << setprecision(9) << resQ.x() << " " << resQ.y() << " "
+              << resQ.z() << " " << resQ.w() << endl;
 
     return 0;
 }
