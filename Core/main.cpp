@@ -82,8 +82,8 @@ int main(int argc, char** argv)
 
         // Если хочешь вывести как 4x4 матрицу:
         Eigen::Matrix4f T = pose.matrix();
-        std::cout << "Full transformation matrix T (4x4):\n"
-                  << T << std::endl;
+        // std::cout << "Full transformation matrix T (4x4):\n"
+        //           << T << std::endl;
         // SLAM.TrackMonocular(im, time_to_track);
         // cout << "Make monocular" << std::endl;
 
@@ -103,10 +103,10 @@ int main(int argc, char** argv)
     SLAM.Shutdown();
 
     // Save camera trajectory
-    const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
+    // const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
     const string f_file = "f_" + string(argv[argc - 1]) + ".txt";
     SLAM.SaveTrajectoryEuRoC(f_file);
-    SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
+    // SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
 
     return 0;
 }

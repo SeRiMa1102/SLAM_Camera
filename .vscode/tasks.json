@@ -30,7 +30,7 @@
         "./build/camera_stabilization",
         "./Vocabulary/ORBvoc.txt",
         "./calib.yaml",
-        "./extra/video_bad.mp4",
+        "./extra/video.mp4",
         "dataset-own"
       ],
       "options": {
