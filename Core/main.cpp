@@ -89,6 +89,8 @@ int main(int argc, char** argv)
         // Read image from file
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         cap >> im;
+        // cv::waitKey(1);
+        cv::imshow("Frame", im);
         if (im.empty()) {
             std::cout << "End of file\n";
             break;

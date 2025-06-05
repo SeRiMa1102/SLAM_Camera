@@ -488,6 +488,11 @@ int System::GetCurrentPose(Eigen::Quaternionf& qua_)
     return state;
 }
 
+Settings* System::GetSettings()
+{
+    return settings_;
+}
+
 void System::SaveTrajectoryEuRoC(const string& filename)
 {
 

@@ -129,6 +129,8 @@ public:
     bool isShutDown();
 
     int GetCurrentPose(Eigen::Quaternionf& qua_);
+    Settings* GetSettings();
+
     void SaveTrajectoryEuRoC(const string& filename);
     void SaveKeyFrameTrajectoryEuRoC(const string& filename);
 
