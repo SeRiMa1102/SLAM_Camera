@@ -149,6 +149,11 @@ set(SOURCE_FOR_PROJECT
                     Core/main.cpp
                     Core/src/image_stabilization.cpp
                     Core/src/image_stabilization.hpp
+                    Core/src/gms_matcher_impl.h
+                    Core/src/gms_matcher.h
+                    Core/src/gms_matcher.cpp
+                    Core/src/filterKalman.cpp
+                    Core/src/filterKalman.hpp
 )
 
 add_executable(camera_stabilization ${SOURCE_FOR_PROJECT})

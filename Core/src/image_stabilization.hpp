@@ -1,4 +1,5 @@
 #pragma once
+#include "filterKalman.hpp"
 #include <Eigen/Core>
 #include <algorithm>
 
@@ -17,6 +18,7 @@
 #include <opencv2/core/mat.hpp>
 #include <vector>
 
+class Kalman2D;
 class ImageStabilization {
 public:
     ImageStabilization();
@@ -26,6 +28,7 @@ public:
 
     void stabilizeImage(const cv::Mat& im);
     void updateGraph(int state, Eigen::Quaternionf q);
+    cv::Mat shiftImage(const cv::Mat& prev, const cv::Mat current);
 
     static void quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation);
 
@@ -37,6 +40,7 @@ public:
 
 private:
     ORB_SLAM3::System* SLAM = nullptr;
+    camera_stabilization::Kalman2D* kalmanFilter_;
     std::vector<Eigen::Quaternionf> quats_;
     std::vector<Eigen::Vector3f> positions_;
     int prevState = 1;

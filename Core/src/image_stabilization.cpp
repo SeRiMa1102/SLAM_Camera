@@ -1,16 +1,20 @@
 #include "image_stabilization.hpp"
+#include "filterKalman.hpp"
+#include "gms_matcher.h"
 
 constexpr size_t numberToAdjustState2 = 10;
 ImageStabilization::ImageStabilization() {}
 ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
     : SLAM(slam)
+    , kalmanFilter_(new camera_stabilization::Kalman2D())
 {
     cv::namedWindow("Frame", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Frame", 640, 480); // Задай нужный размер сразу!
+    cv::resizeWindow("Frame", 640, 480);
 }
 
 ImageStabilization::~ImageStabilization()
 {
+    delete kalmanFilter_;
     Eigen::Quaternionf resQ = average_quaternions(quats_);
     Eigen::Vector3f resP = averageCameraPosition(positions_);
     std::cout << std::fixed;
@@ -35,6 +39,7 @@ ImageStabilization::~ImageStabilization()
 
 void ImageStabilization::stabilizeImage(const cv::Mat& im)
 {
+    static cv::Mat previosImage;
     Eigen::Quaternionf q_smooth(0.982242703, 0.004156070, -0.162135080, 0.094309561);
 
     Eigen::Quaternionf q;
@@ -67,11 +72,11 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
         cv::imshow("Frame", im);
     }
     cv::waitKey(1);
+    previosImage = im.clone();
 }
 
 void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
 {
-
     if (state == 2) {
         counterState2++;
         quats_.push_back(q);
@@ -86,6 +91,83 @@ void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
             quats_.push_back(q);
         }
     }
+}
+
+void updateFrameSize() {}
+
+cv::Mat ImageStabilization::shiftImage(const cv::Mat& prev, const cv::Mat current)
+{
+    cv::Ptr<cv::Feature2D> detector = cv::ORB::create(1000);
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+
+    std::vector<cv::DMatch> matches;
+    std::vector<cv::DMatch> good_matches_gms;
+    std::vector<cv::Point2f> points1, points2;
+    std::vector<cv::KeyPoint> keypoints_prev;
+    cv::Mat descriptors_prev;
+    std::vector<cv::KeyPoint> keypoints_curr;
+    cv::Mat descriptors_curr;
+    int inliers = 0;
+    cv::Mat warp;
+    cv::Point2f shift;
+    cv::Point2f smoothed_shift;
+
+    if (prev.empty() || current.empty()) {
+        std::cout << "Empty frame\n";
+        return current;
+    }
+
+    // cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+
+    detector->detectAndCompute(prev, cv::noArray(),
+        keypoints_prev, descriptors_prev);
+    detector->detectAndCompute(current, cv::noArray(),
+        keypoints_curr, descriptors_curr);
+    {
+        // cv::Mat frame_expanded(frame.rows * 3, frame.cols * 3,
+        //     frame.type(),
+        //     cv::Scalar(0, 0, 0));
+        // frame.copyTo(frame_expanded(
+        //     cv::Rect(frame.cols, frame.rows, frame.cols,
+        //         frame.rows))); // Копируем исходное изображение в центр
+        // cv::Mat display(frame_expanded);
+    }
+    cv::Mat display(current);
+
+    if (descriptors_prev.empty() || descriptors_curr.empty()) {
+        std::cout << "Warning: descriptors` are empty."
+                     "Skipping frame."
+                  << std::endl;
+        return current;
+    }
+
+    matcher->match(descriptors_prev, descriptors_curr, matches);
+    // Filtering matches GMS
+    inliers = camera_stabilization::filterMatchesGMS(matches, keypoints_prev,
+        keypoints_curr, current.size(),
+        current.size(), good_matches_gms,
+        false);
+
+    std::cout << "inliers = " << inliers << std::endl;
+    if (inliers < 100) {
+        std::cout << "!!!!!!!!!!!!!!!!@@@@@@@@@@@@@@@\n";
+        return current;
+    }
+
+    for (const cv::DMatch& match : good_matches_gms) {
+        points1.push_back(keypoints_prev[match.queryIdx].pt);
+        points2.push_back(keypoints_curr[match.trainIdx].pt);
+    }
+
+    shift = camera_stabilization::computeShift(points1, points2);
+    std::cout << "Shift = " << shift << std::endl;
+    smoothed_shift = kalmanFilter_->update(shift);
+    warp = (cv::Mat_<double>(2, 3) << 1, 0, -smoothed_shift.x,
+        0, 1,
+        -smoothed_shift.y);
+
+    return display;
+    // cv::imshow("Feature Matches", display);
 }
 
 void ImageStabilization::quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation)
