@@ -5,7 +5,10 @@
 #include <opencv2/imgproc.hpp>
 #include <ostream>
 
-constexpr size_t numberToAdjustState2 = 10;
+constexpr size_t numberToAdjustState2 = 5;
+constexpr size_t numberToAdjustState3 = 5;
+constexpr size_t numberToStabilize = 15;
+constexpr size_t numberToApproximate = 5;
 constexpr size_t neededNumberOfInliers = 50;
 ImageStabilization::ImageStabilization() {}
 ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
@@ -120,15 +123,22 @@ void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
     if (state == 2) {
         counterState2++;
         quats_.push_back(q);
+        return;
     }
     if (state == 3) {
         counterState3++;
+        if (counterState3 > numberToAdjustState3) {
+            counterState3 = 0;
+            counterState2 = 0;
+            return;
+        }
         if (quats_.size() > 2) {
             Eigen::Quaternionf q_prev2 = quats_[quats_.size() - 2];
             Eigen::Quaternionf q_prev1 = quats_[quats_.size() - 1];
             Eigen::Quaternionf delta_q = q_prev2.inverse() * q_prev1;
             Eigen::Quaternionf q_pred = q_prev1 * delta_q;
             quats_.push_back(q_pred);
+            return;
         }
     }
 }
