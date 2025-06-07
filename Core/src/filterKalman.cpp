@@ -45,6 +45,7 @@ cv::Point2f computeShift(const std::vector<cv::Point2f>& pts1,
     cv::Point2f total_shift(0, 0);
     for (size_t i = 0; i < pts1.size(); i++) {
         total_shift += pts2[i] - pts1[i];
+        // std::cout << "total_shift = " << total_shift << std::endl;
     }
     return pts1.size() > 0 ? total_shift * (1.0f / pts1.size())
                            : cv::Point2f(0, 0);

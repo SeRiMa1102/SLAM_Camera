@@ -77,10 +77,10 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
             cv::flip(update, update, -1);
 
         } else {
-            // cv::Mat stabilizedPrev = previosImage;
-            cv::Mat stabilizedPrev;
-            rotateImage(quats_.back(), q_smooth, im, update, SLAM);
-            rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
+            cv::Mat stabilizedPrev = previosImage;
+            // cv::Mat stabilizedPrev;
+            // rotateImage(quats_.back(), q_smooth, im, update, SLAM);
+            // rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
             update = shiftImage(stabilizedPrev, update);
             cv::flip(update, update, -1);
         }
@@ -93,7 +93,7 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
     cv::imshow("Frame", update);
     writer.write(update);
     cv::waitKey(1);
-    previosImage = im;
+    previosImage = im.clone();
 }
 
 void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
@@ -188,7 +188,6 @@ cv::Mat ImageStabilization::shiftImage(const cv::Mat& prev, const cv::Mat curren
         //         frame.rows))); // Копируем исходное изображение в центр
         // cv::Mat display(frame_expanded);
     }
-    cv::Mat display(current);
 
     if (descriptors_prev.empty() || descriptors_curr.empty()) {
         std::cout << "Warning: descriptors` are empty."
@@ -224,9 +223,24 @@ cv::Mat ImageStabilization::shiftImage(const cv::Mat& prev, const cv::Mat curren
         0, 1,
         -smoothed_shift.y);
 
-    cv::warpAffine(display, display, warp, cv::Size(1080 * 2, 1920 * 2));
-    // cv::imshow("Feature Matches", display);
-    return display;
+    double expand_ratio = 1.5;
+    int canvas_w = (double)current.cols * expand_ratio;
+    int canvas_h = (double)current.rows * expand_ratio;
+    cv::Mat canvas(canvas_h, canvas_w, current.type(), cv::Scalar(0, 0, 0));
+
+    // ==== 2. Вставляем исходное изображение в центр canvas ====
+    int offset_x = (canvas_w - current.cols) / 2;
+    int offset_y = (canvas_h - current.rows) / 2;
+    current.copyTo(canvas(cv::Rect(offset_x, offset_y, current.cols, current.rows)));
+
+    // ==== 3. Делаем сдвиг (warpAffine) на canvas ====
+    cv::Mat shifted_canvas;
+    warp = (cv::Mat_<double>(2, 3) << 1, 0, -smoothed_shift.x, 0, 1, -smoothed_shift.y);
+    cv::warpAffine(canvas, shifted_canvas, warp, canvas.size(),
+        cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+
+    // ==== 4. Возвращаем увеличенный сдвинутый canvas ====
+    return shifted_canvas;
 }
 
 void ImageStabilization::quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation)
