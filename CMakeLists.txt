@@ -145,6 +145,12 @@ target_link_libraries(${PROJECT_NAME}
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
 
-add_executable(camera_stabilization
-        Core/main.cpp)
+set(SOURCE_FOR_PROJECT 
+                    Core/main.cpp
+                    Core/src/image_stabilization.cpp
+                    Core/src/image_stabilization.hpp
+)
+
+add_executable(camera_stabilization ${SOURCE_FOR_PROJECT})
 target_link_libraries(camera_stabilization ${PROJECT_NAME})
+target_include_directories(camera_stabilization PRIVATE Core/src)

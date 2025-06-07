@@ -476,9 +476,9 @@ int System::GetCurrentPose(Eigen::Quaternionf& qua_, Eigen::Vector3f& trans_)
     Sophus::SE3f Twc = ((*lit) * Trw).inverse();
     qua_ = Twc.unit_quaternion();
     trans_ = Twc.translation();
-    std::cout << std::fixed;
-    std::cout << setprecision(6) << 1e9 * (*lT) << " " << qua_.x() << " " << qua_.y() << " "
-              << qua_.z() << " " << qua_.w() << endl;
+    // std::cout << std::fixed;
+    // std::cout << setprecision(6) << 1e9 * (*lT) << " " << qua_.x() << " " << qua_.y() << " "
+    //           << qua_.z() << " " << qua_.w() << endl;
 
     // std::cout << setprecision(6) << 1e9 * (*lT) << " " << setprecision(9) << twc(0)
     //           << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " "

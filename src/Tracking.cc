@@ -1771,7 +1771,7 @@ void Tracking::Track()
         pCurrentMap->SetLastMapChange(nCurMapChangeIndex);
         mbMapUpdated = true;
     }
-    std::cout << "mState = " << mState << std::endl;
+    // std::cout << "mState = " << mState << std::endl;
 
     if (mState == NOT_INITIALIZED) {
         MonocularInitialization();
@@ -2218,10 +2218,10 @@ void Tracking::MonocularInitialization()
 
     if (!mbReadyToInitializate) {
         // Set Reference Frame
-        std::cout << __FUNCTION__ << " if (!mbReadyToInitializate) = true\n";
+        // std::cout << __FUNCTION__ << " if (!mbReadyToInitializate) = true\n";
         if (mCurrentFrame.mvKeys.size() > 100) {
 
-            std::cout << __FUNCTION__ << " if (mCurrentFrame.mvKeys.size() > 100)\n";
+            // std::cout << __FUNCTION__ << " if (mCurrentFrame.mvKeys.size() > 100)\n";
             mInitialFrame = Frame(mCurrentFrame);
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
@@ -2242,10 +2242,10 @@ void Tracking::MonocularInitialization()
         }
     } else {
 
-        std::cout << __FUNCTION__ << " if (!mbReadyToInitializate) = false\n";
+        // std::cout << __FUNCTION__ << " if (!mbReadyToInitializate) = false\n";
         if (((int)mCurrentFrame.mvKeys.size() <= 100) || ((mSensor == System::IMU_MONOCULAR) && (mLastFrame.mTimeStamp - mInitialFrame.mTimeStamp > 1.0))) {
             mbReadyToInitializate = false;
-            std::cout << __FUNCTION__ << " if (((int)mCurrentFrame.mvKeys.size() <= 100) || ((mSensor == System::IMU_MONOCULAR\n";
+            // std::cout << __FUNCTION__ << " if (((int)mCurrentFrame.mvKeys.size() <= 100) || ((mSensor == System::IMU_MONOCULAR\n";
 
             return;
         }
@@ -2257,7 +2257,7 @@ void Tracking::MonocularInitialization()
 
         // Check if there are enough correspondences
         if (nmatches < 100) {
-            std::cout << __FUNCTION__ << " Check if there are enough correspondences = false\n";
+            // std::cout << __FUNCTION__ << " Check if there are enough correspondences = false\n";
             mbReadyToInitializate = false;
             return;
         }
@@ -2268,7 +2268,7 @@ void Tracking::MonocularInitialization()
         if (mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,
                 mCurrentFrame.mvKeysUn, mvIniMatches,
                 Tcw, mvIniP3D, vbTriangulated)) {
-            std::cout << __FUNCTION__ << " mpCamera->ReconstructWithTwoViews\n";
+            // std::cout << __FUNCTION__ << " mpCamera->ReconstructWithTwoViews\n";
             for (size_t i = 0, iend = mvIniMatches.size(); i < iend; i++) {
                 if (mvIniMatches[i] >= 0 && !vbTriangulated[i]) {
                     mvIniMatches[i] = -1;
