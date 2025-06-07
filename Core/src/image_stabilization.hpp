@@ -28,6 +28,7 @@ public:
 
     void stabilizeImage(const cv::Mat& im);
     void updateGraph(int state, Eigen::Quaternionf q);
+    static cv::Mat updateFrameSize(const cv::Mat& image);
     cv::Mat shiftImage(const cv::Mat& prev, const cv::Mat current);
 
     static void quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation);
