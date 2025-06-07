@@ -401,7 +401,7 @@ bool System::isShutDown()
     return mbShutDown;
 }
 
-int System::GetCurrentPose(Eigen::Quaternionf& qua_)
+int System::GetCurrentPose(Eigen::Quaternionf& qua_, Eigen::Vector3f& trans_)
 {
 
     qua_ = Eigen::Quaternionf(0, 0, 0, 0);
@@ -475,7 +475,7 @@ int System::GetCurrentPose(Eigen::Quaternionf& qua_)
 
     Sophus::SE3f Twc = ((*lit) * Trw).inverse();
     qua_ = Twc.unit_quaternion();
-    Eigen::Vector3f twc = Twc.translation();
+    trans_ = Twc.translation();
     std::cout << std::fixed;
     std::cout << setprecision(6) << 1e9 * (*lT) << " " << qua_.x() << " " << qua_.y() << " "
               << qua_.z() << " " << qua_.w() << endl;

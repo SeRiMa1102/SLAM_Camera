@@ -128,7 +128,7 @@ public:
     void Shutdown();
     bool isShutDown();
 
-    int GetCurrentPose(Eigen::Quaternionf& qua_);
+    int GetCurrentPose(Eigen::Quaternionf& qua_, Eigen::Vector3f& trans_);
     Settings* GetSettings();
 
     void SaveTrajectoryEuRoC(const string& filename);

@@ -14,63 +14,6 @@
 #include <iostream>
 #include <vector>
 
-void quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation)
-{
-    Eigen::Matrix3f R_eigen = quat.toRotationMatrix();
-
-    cv::Mat R(3, 3, CV_64F); // <--- тут CV_64F
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            R.at<double>(i, j) = static_cast<double>(R_eigen(i, j)); // приведение типов
-    rotation = R;
-}
-
-void rotateImage(const Eigen::Quaternionf& from, const Eigen::Quaternionf& to, const cv::Mat& current, cv::Mat& stabilized, ORB_SLAM3::System* SLAM)
-{
-    cv::Mat rotFrom;
-    quatToRotation(from, rotFrom);
-    cv::Mat rotTo;
-    quatToRotation(to, rotTo);
-
-    cv::Mat R1 = rotTo * rotFrom.t();
-    cv::Mat H;
-    cv::Mat K_mat = cv::Mat(SLAM->GetSettings()->camera1()->toK());
-    std::cout << "Here\n";
-    K_mat.convertTo(K_mat, CV_64F);
-    H = K_mat * R1.inv() * K_mat.inv();
-    std::cout << "det(R1) = " << cv::determinant(R1) << std::endl;
-
-    // Вычисляем куда попадут углы изображения после трансформации
-    cv::Size img_size = current.size();
-    std::vector<cv::Point2f> corners = {
-        { 0, 0 },
-        { (float)img_size.width, 0 },
-        { (float)img_size.width, (float)img_size.height },
-        { 0, (float)img_size.height }
-    };
-
-    std::vector<cv::Point2f> warped_corners;
-    cv::perspectiveTransform(corners, warped_corners, H);
-
-    // Находим границы нового изображения
-    cv::Rect bbox = cv::boundingRect(warped_corners);
-
-    // Строим смещающую матрицу, чтобы изображение не вышло за границы
-    cv::Mat offset = (cv::Mat_<double>(3, 3) << 1, 0, -bbox.x, 0, 1, -bbox.y, 0, 0, 1);
-
-    // Общая гомография с учётом смещения
-    cv::Mat H_total = offset * H;
-
-    // Применяем трансформацию
-    cv::warpPerspective(current, stabilized, H_total, bbox.size());
-
-    // // Показываем результат
-    // std::string windowName = "Last warped";
-    // cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    // cv::imshow(windowName, result1);
-    // cv::imwrite("/home/rinat/Photogrammetry/build/rectified_2.jpg", result1);
-}
-
 Eigen::Vector3f averageCameraPosition(const std::vector<Eigen::Vector3f>& positions)
 {
     if (positions.empty()) {
@@ -161,7 +104,7 @@ int main(int argc, char** argv)
     size_t frame_id = 0;
     cv::namedWindow("Frame", cv::WINDOW_NORMAL);
     cv::resizeWindow("Frame", 640, 480); // Задай нужный размер сразу!
-    Eigen::Quaternionf q_smooth(0.993483126, 0.040015623, -0.055418879, -0.091207497);
+    Eigen::Quaternionf q_smooth(-0.999977410, 0.006577891, -0.000561112, 0.001298228);
     Eigen::Vector3f p_smooth(-0.044727251, 0.007203315, 0.007359035);
     while (true) {
         // Read image from file
@@ -171,6 +114,7 @@ int main(int argc, char** argv)
             std::cout << "End of file\n";
             break;
         }
+
         if (imageScale != 1.f) {
             int width = im.cols * imageScale;
             int height = im.rows * imageScale;
@@ -192,16 +136,29 @@ int main(int argc, char** argv)
         }
 
         if (result == 2) {
+
+            Eigen::Quaternionf q_delta = q_smooth * q.inverse();
+            Eigen::Matrix3f R_delta = q_delta.toRotationMatrix();
+            Eigen::Matrix3f K = SLAM.GetSettings()->camera1()->toK_(); // камера-интринсика
+            Eigen::Matrix3f H = K * R_delta * K.inverse();
+
+            Eigen::Vector3f t_corr = trans - p_smooth;
+            float fx = K(0, 0);
+            float fy = K(1, 1);
+            float dx = fx * t_corr.x() / t_corr.z();
+            float dy = fy * t_corr.y() / t_corr.z();
+            cv::Mat warp_mat = (cv::Mat_<double>(2, 3) << 1, 0, -dx, 0, 1, -dy);
             cv::Mat stabilized;
-            rotateImage(q, q_smooth, im, stabilized, &SLAM);
-            // cv::flip(stabilized, stabilized, 1);
-            cv::flip(stabilized, stabilized, -1);
+            cv::warpAffine(im, stabilized, warp_mat, im.size());
+
+            // cv::Mat H_cv;
+            // cv::eigen2cv(H, H_cv);
+            // cv::Mat stabilized;
+            // cv::warpPerspective(im, stabilized, H_cv, im.size());
             cv::imshow("Frame", stabilized);
-            // cv::imshow("Frame", im);
 
         } else {
 
-            cv::flip(im, im, -1);
             cv::imshow("Frame", im);
         }
         cv::waitKey(1);
@@ -216,7 +173,7 @@ int main(int argc, char** argv)
         } else {
             time_to_track += ttrack;
         }
-        // usleep(50000);
+        usleep(50000);
     }
     // Stop all threads
     SLAM.Shutdown();
@@ -234,11 +191,11 @@ int main(int argc, char** argv)
         << "Size = " << quats_.size() << std::endl;
 
     int i = 0;
-    // for (const auto& q : quats_) {
-    //     std::cout << i++ << ": ";
-    //     std::cout << setprecision(6) << q.x() << " " << q.y() << " "
-    //               << q.z() << " " << q.w() << endl;
-    // }
+    for (const auto& q : quats_) {
+        std::cout << i++ << ": ";
+        std::cout << setprecision(6) << q.x() << " " << q.y() << " "
+                  << q.z() << " " << q.w() << endl;
+    }
 
     std::cout << "Average quaternion = ";
     std::cout << setprecision(9) << resQ.x() << " " << resQ.y() << " "
