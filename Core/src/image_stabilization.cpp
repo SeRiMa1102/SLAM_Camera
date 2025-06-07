@@ -56,6 +56,7 @@ ImageStabilization::~ImageStabilization()
 void ImageStabilization::stabilizeImage(const cv::Mat& im)
 {
     static cv::Mat previosImage;
+    // Eigen::Quaternionf q_smooth(1.0f, 0.0f, 0.0f, 0.0f); // (w, x, y, z)
     Eigen::Quaternionf q_smooth(0.982242703, 0.004156070, -0.162135080, 0.094309561);
 
     Eigen::Quaternionf q;
@@ -70,22 +71,40 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
     updateGraph(result, q);
     cv::Mat update;
 
-    update = im;
+    update = im.clone();
+    static bool flag = false;
     // if ((result == 2) || (result == 3)) {
     if (result == 2) {
         if (counterState2 < numberToAdjustState2) {
             cv::flip(update, update, -1);
 
         } else {
-            cv::Mat stabilizedPrev = previosImage;
+            cv::Mat stabilizedPrev = previosImage.clone();
+
+            if (flag == false) {
+                cv::imwrite("/home/rinat/SLAM_Camera/build/first.jpg", previosImage);
+                // cv::flip(update, update, -1);
+                cv::imwrite("/home/rinat/SLAM_Camera/build/second.jpg", update);
+                // flag = true;
+                // cv::flip(update, update, -1);
+                std::cout << "first filtered\n";
+            }
             // cv::Mat stabilizedPrev;
-            // rotateImage(quats_.back(), q_smooth, im, update, SLAM);
-            // rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
+            rotateImage(quats_.back(), q_smooth, im, update, SLAM);
+            rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
+            if (flag == false) {
+                cv::imwrite("/home/rinat/SLAM_Camera/build/first_1.jpg", stabilizedPrev);
+                cv::imwrite("/home/rinat/SLAM_Camera/build/second_1.jpg", update);
+                flag = true;
+                std::cout << "first filtered\n";
+            }
             update = shiftImage(stabilizedPrev, update);
             cv::flip(update, update, -1);
         }
     } else {
         counterState2 = 0;
+        counterState3 = 0;
+        kalmanFilter_->reinitFilter();
         cv::flip(update, update, -1);
     }
 
@@ -109,7 +128,7 @@ void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
             Eigen::Quaternionf q_prev1 = quats_[quats_.size() - 1];
             Eigen::Quaternionf delta_q = q_prev2.inverse() * q_prev1;
             Eigen::Quaternionf q_pred = q_prev1 * delta_q;
-            quats_.push_back(q);
+            quats_.push_back(q_pred);
         }
     }
 }
@@ -293,55 +312,8 @@ void ImageStabilization::rotateImage(
     cv::warpPerspective(current, warped_full, H_total, bbox.size(),
         cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
 
-    stabilized = warped_full;
+    stabilized = warped_full.clone();
 }
-
-/*
-    // void ImageStabilization::rotateImage(const Eigen::Quaternionf& from, const Eigen::Quaternionf& to, const cv::Mat& current, cv::Mat& stabilized, ORB_SLAM3::System* SLAM)
-    // {
-    //     cv::Mat rotFrom;
-    //     quatToRotation(from, rotFrom);
-    //     cv::Mat rotTo;
-    //     quatToRotation(to, rotTo);
-
-    //     cv::Mat R1 = rotTo * rotFrom.t();
-    //     cv::Mat H;
-    //     cv::Mat K_mat = cv::Mat(SLAM->GetSettings()->camera1()->toK());
-    //     K_mat.convertTo(K_mat, CV_64F);
-    //     H = K_mat * R1.inv() * K_mat.inv();
-    //     // std::cout << "det(R1) = " << cv::determinant(R1) << std::endl;
-
-    //     // Вычисляем куда попадут углы изображения после трансформации
-    //     cv::Size img_size = current.size();
-    //     std::vector<cv::Point2f> corners = {
-    //         { 0, 0 },
-    //         { (float)img_size.width, 0 },
-    //         { (float)img_size.width, (float)img_size.height },
-    //         { 0, (float)img_size.height }
-    //     };
-
-    //     std::vector<cv::Point2f> warped_corners;
-    //     cv::perspectiveTransform(corners, warped_corners, H);
-
-    //     // Находим границы нового изображения
-    //     cv::Rect bbox = cv::boundingRect(warped_corners);
-
-    //     // Строим смещающую матрицу, чтобы изображение не вышло за границы
-    //     cv::Mat offset = (cv::Mat_<double>(3, 3) << 1, 0, -bbox.x, 0, 1, -bbox.y, 0, 0, 1);
-
-    //     // Общая гомография с учётом смещения
-    //     cv::Mat H_total = offset * H;
-
-    //     // Применяем трансформацию
-    //     cv::warpPerspective(current, stabilized, H_total, bbox.size());
-
-    //     // // Показываем результат
-    //     // std::string windowName = "Last warped";
-    //     // cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    //     // cv::imshow(windowName, result1);
-    //     // cv::imwrite("/home/rinat/Photogrammetry/build/rectified_2.jpg", result1);
-    // }
-*/
 
 Eigen::Vector3f ImageStabilization::averageCameraPosition(const std::vector<Eigen::Vector3f>& positions)
 {
