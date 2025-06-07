@@ -30,6 +30,7 @@ public:
     void updateGraph(int state, Eigen::Quaternionf q);
     static cv::Mat updateFrameSize(const cv::Mat& image);
     cv::Mat shiftImage(const cv::Mat& prev, const cv::Mat current);
+    void reinitFiltraion();
 
     static void quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation);
 
@@ -48,4 +49,5 @@ private:
     size_t counterState2 = 0;
     size_t counterState3 = 0;
     cv::VideoWriter writer;
+    Eigen::Quaternionf averageCurrentQuaternion_;
 };

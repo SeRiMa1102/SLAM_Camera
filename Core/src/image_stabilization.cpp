@@ -27,6 +27,9 @@ ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
     }
     cv::namedWindow("Frame", cv::WINDOW_NORMAL);
     cv::resizeWindow("Frame", 640, 480);
+
+    // Eigen::Quaternionf q_smooth(1.0f, 0.0f, 0.0f, 0.0f); // (w, x, y, z)
+    averageCurrentQuaternion_ = Eigen::Quaternionf(0.982242703, 0.004156070, -0.162135080, 0.094309561);
 }
 
 ImageStabilization::~ImageStabilization()
@@ -59,8 +62,6 @@ ImageStabilization::~ImageStabilization()
 void ImageStabilization::stabilizeImage(const cv::Mat& im)
 {
     static cv::Mat previosImage;
-    // Eigen::Quaternionf q_smooth(1.0f, 0.0f, 0.0f, 0.0f); // (w, x, y, z)
-    Eigen::Quaternionf q_smooth(0.982242703, 0.004156070, -0.162135080, 0.094309561);
 
     Eigen::Quaternionf q;
     Eigen::Vector3f trans;
@@ -77,37 +78,29 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
     update = im.clone();
     static bool flag = false;
     // if ((result == 2) || (result == 3)) {
-    if (result == 2) {
-        if (counterState2 < numberToAdjustState2) {
-            cv::flip(update, update, -1);
+    if (quats_.size() > numberToStabilize) {
+        cv::Mat stabilizedPrev = previosImage.clone();
 
-        } else {
-            cv::Mat stabilizedPrev = previosImage.clone();
-
-            if (flag == false) {
-                cv::imwrite("/home/rinat/SLAM_Camera/build/first.jpg", previosImage);
-                // cv::flip(update, update, -1);
-                cv::imwrite("/home/rinat/SLAM_Camera/build/second.jpg", update);
-                // flag = true;
-                // cv::flip(update, update, -1);
-                std::cout << "first filtered\n";
-            }
-            // cv::Mat stabilizedPrev;
-            rotateImage(quats_.back(), q_smooth, im, update, SLAM);
-            rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
-            if (flag == false) {
-                cv::imwrite("/home/rinat/SLAM_Camera/build/first_1.jpg", stabilizedPrev);
-                cv::imwrite("/home/rinat/SLAM_Camera/build/second_1.jpg", update);
-                flag = true;
-                std::cout << "first filtered\n";
-            }
-            update = shiftImage(stabilizedPrev, update);
-            cv::flip(update, update, -1);
+        if (flag == false) {
+            cv::imwrite("/home/rinat/SLAM_Camera/build/first.jpg", previosImage);
+            // cv::flip(update, update, -1);
+            cv::imwrite("/home/rinat/SLAM_Camera/build/second.jpg", update);
+            // flag = true;
+            // cv::flip(update, update, -1);
+            std::cout << "first filtered\n";
         }
+        // cv::Mat stabilizedPrev;
+        rotateImage(quats_.back(), averageCurrentQuaternion_, im, update, SLAM);
+        rotateImage(quats_[quats_.size() - 2], averageCurrentQuaternion_, previosImage, stabilizedPrev, SLAM);
+        if (flag == false) {
+            cv::imwrite("/home/rinat/SLAM_Camera/build/first_1.jpg", stabilizedPrev);
+            cv::imwrite("/home/rinat/SLAM_Camera/build/second_1.jpg", update);
+            flag = true;
+            std::cout << "first filtered\n";
+        }
+        update = shiftImage(stabilizedPrev, update);
+        cv::flip(update, update, -1);
     } else {
-        counterState2 = 0;
-        counterState3 = 0;
-        kalmanFilter_->reinitFilter();
         cv::flip(update, update, -1);
     }
 
@@ -120,18 +113,24 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
 
 void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
 {
+    // TODO:add moving average
+    if (state == 1) {
+        reinitFiltraion();
+    }
+
     if (state == 2) {
         counterState2++;
         quats_.push_back(q);
         return;
     }
+
     if (state == 3) {
         counterState3++;
-        if (counterState3 > numberToAdjustState3) {
-            counterState3 = 0;
-            counterState2 = 0;
+        if (counterState3 > numberToApproximate) {
+            reinitFiltraion();
             return;
         }
+
         if (quats_.size() > 2) {
             Eigen::Quaternionf q_prev2 = quats_[quats_.size() - 2];
             Eigen::Quaternionf q_prev1 = quats_[quats_.size() - 1];
@@ -270,6 +269,13 @@ cv::Mat ImageStabilization::shiftImage(const cv::Mat& prev, const cv::Mat curren
 
     // ==== 4. Возвращаем увеличенный сдвинутый canvas ====
     return shifted_canvas;
+}
+void ImageStabilization::reinitFiltraion()
+{
+    counterState2 = 0;
+    counterState3 = 0;
+    kalmanFilter_->reinitFilter();
+    quats_.clear();
 }
 
 void ImageStabilization::quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation)
