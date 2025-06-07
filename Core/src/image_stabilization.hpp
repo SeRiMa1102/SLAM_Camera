@@ -47,4 +47,5 @@ private:
     int prevState = 1;
     size_t counterState2 = 0;
     size_t counterState3 = 0;
+    cv::VideoWriter writer;
 };

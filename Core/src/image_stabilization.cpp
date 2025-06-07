@@ -1,6 +1,9 @@
 #include "image_stabilization.hpp"
 #include "filterKalman.hpp"
 #include "gms_matcher.h"
+#include <opencv2/core/types.hpp>
+#include <opencv2/imgproc.hpp>
+#include <ostream>
 
 constexpr size_t numberToAdjustState2 = 10;
 constexpr size_t neededNumberOfInliers = 50;
@@ -9,6 +12,16 @@ ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
     : SLAM(slam)
     , kalmanFilter_(new camera_stabilization::Kalman2D())
 {
+    int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
+    double fps = 30.0; // Частота кадров
+    cv::Size frameSize(1080 * 2, 1920 * 2); // Размер кадра (ширина, высота)
+
+    writer = cv::VideoWriter("/home/rinat/SLAM_Camera/build/output.mp4", fourcc, fps, frameSize, true);
+    if (!writer.isOpened()) {
+        std::cerr << "Ошибка открытия файла для записи видео!" << std::endl;
+        exit(-1);
+        // обработка ошибки
+    }
     cv::namedWindow("Frame", cv::WINDOW_NORMAL);
     cv::resizeWindow("Frame", 640, 480);
 }
@@ -16,6 +29,8 @@ ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
 ImageStabilization::~ImageStabilization()
 {
     delete kalmanFilter_;
+    writer.release();
+
     Eigen::Quaternionf resQ = average_quaternions(quats_);
     Eigen::Vector3f resP = averageCameraPosition(positions_);
     std::cout << std::fixed;
@@ -55,27 +70,28 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
     updateGraph(result, q);
     cv::Mat update;
 
+    update = im;
     // if ((result == 2) || (result == 3)) {
     if (result == 2) {
         if (counterState2 < numberToAdjustState2) {
-            update = im;
             cv::flip(update, update, -1);
 
         } else {
+            // cv::Mat stabilizedPrev = previosImage;
             cv::Mat stabilizedPrev;
             rotateImage(quats_.back(), q_smooth, im, update, SLAM);
             rotateImage(quats_[quats_.size() - 2], q_smooth, previosImage, stabilizedPrev, SLAM);
-            // stabilized = shiftImage(stabilizedPrev, stabilized);
+            update = shiftImage(stabilizedPrev, update);
             cv::flip(update, update, -1);
         }
     } else {
         counterState2 = 0;
-        update = im;
         cv::flip(update, update, -1);
     }
 
     update = updateFrameSize(update);
     cv::imshow("Frame", update);
+    writer.write(update);
     cv::waitKey(1);
     previosImage = im;
 }
@@ -208,8 +224,9 @@ cv::Mat ImageStabilization::shiftImage(const cv::Mat& prev, const cv::Mat curren
         0, 1,
         -smoothed_shift.y);
 
-    return display;
+    cv::warpAffine(display, display, warp, cv::Size(1080 * 2, 1920 * 2));
     // cv::imshow("Feature Matches", display);
+    return display;
 }
 
 void ImageStabilization::quatToRotation(const Eigen::Quaternionf& quat, cv::Mat& rotation)
