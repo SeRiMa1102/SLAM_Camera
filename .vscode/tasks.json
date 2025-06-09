@@ -4,6 +4,11 @@
     {
       "label": "Clean",
       "type": "shell",
+      "options": {
+        "statusbar": {
+            "hide" : true
+        }
+      },
       "command": "rm",
       "args": ["-rf", ".venv", "build", "lib", "Thirdparty/DBoW2/build", "Thirdparty/DBoW2/lib", "Thirdparty/g2o/build", "Thirdparty/g2o/lib", "Thirdparty/Sophus/build", "Vocabulary/ORBvoc.txt"],
       "group": "none",
@@ -32,6 +37,33 @@
         "./calib.yaml",
         "./extra/video.mp4",
         "dataset-own"
+      ],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "/usr/local/lib:${env:LD_LIBRARY_PATH}"
+        },
+        "statusbar": {
+            "hide" : false
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+        {
+      "label": "Get",
+      "type": "shell",
+      "command": "time",
+      "args": [
+        "./build/get_position"
       ],
       "options": {
         "env": {
@@ -89,7 +121,7 @@
       "label": "Eva Own",
       "options": {
         "statusbar": {
-            "hide" : false
+            "hide" : true
         }
       },
       "type": "shell",
