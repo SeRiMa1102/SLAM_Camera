@@ -5,7 +5,7 @@
 #include <opencv2/imgproc.hpp>
 #include <ostream>
 
-constexpr size_t numberToStabilize = 15;
+constexpr size_t numberToStabilize = 30;
 constexpr size_t numberToApproximate = 5;
 constexpr size_t neededNumberOfInliers = 50;
 ImageStabilization::ImageStabilization() {}
@@ -14,7 +14,7 @@ ImageStabilization::ImageStabilization(ORB_SLAM3::System* slam)
     , kalmanFilter_(new camera_stabilization::Kalman2D())
 {
     int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-    double fps = 30.0; // Частота кадров
+    double fps = 20.0; // Частота кадров
     cv::Size frameSize(1080 * 2, 1920 * 2); // Размер кадра (ширина, высота)
     // cv::Size frameSize(1080 * 2 * 2, 1920 * 2); // Размер кадра (ширина, высота)
 
@@ -104,9 +104,8 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
 
     cv::flip(update, update, -1);
 
-    //////
-
     update = updateFrameSize(update);
+    //////
     // cv::Mat img1 = im.clone();
 
     // cv::flip(img1, img1, -1);
@@ -114,8 +113,10 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
 
     // cv::Mat resultConcat;
     // cv::hconcat(update, img1, resultConcat);
-    // cv::imshow("Frame", resultConcat);
-    // writer.write(resultConcat);
+    // // cv::imshow("Frame", resultConcat);
+    // // writer.write(resultConcat);
+    // cv::imshow("Frame", img1);
+    // writer.write(img1);
     ///////
     cv::imshow("Frame", update);
     writer.write(update);

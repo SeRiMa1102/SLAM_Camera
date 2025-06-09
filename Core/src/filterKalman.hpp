@@ -6,10 +6,10 @@ namespace camera_stabilization {
 
 class Kalman2D {
 public:
-    Kalman2D(float process_noise = 1e-3, float measurement_noise = 20,
+    Kalman2D(float process_noise = 1e-3, float measurement_noise = 10,
         float error = 1.0);
 
-    void reinitFilter(float process_noise = 1e-3, float measurement_noise = 20,
+    void reinitFilter(float process_noise = 1e-3, float measurement_noise = 10,
         float error = 1.0);
 
     cv::Point2f update(const cv::Point2f& measurement_pt);

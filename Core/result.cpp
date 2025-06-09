@@ -7,9 +7,9 @@
 int main()
 {
 #if PROCCESSED
-    cv::VideoCapture cap("/home/rinat/SLAM_Camera/build/output.mp4");
+    cv::VideoCapture cap("/home/rinat/test/results/proccessed.mp4");
 #else
-    cv::VideoCapture cap("/home/rinat/SLAM_Camera/extra/video.mp4");
+    cv::VideoCapture cap("/home/rinat/test/results/initial.mp4");
 #endif
 
     cv::namedWindow("Frame", cv::WINDOW_NORMAL);
@@ -28,14 +28,16 @@ int main()
 
 // ===== 1. Выбор начальной точки вручную =====
 #if PROCCESSED
-    cv::Point2f initialPoint(900, 1920 * 2 - 1730); // или полученная с mouse click
+    cv::Point2f initialPoint(1050, 2350); // или полученная с mouse click
+    // cv::Point2f initialPoint(900, 2110); // или полученная с mouse click
 #else
-    cv::Point2f initialPoint(1080 - 310, 800); // или полученная с mouse click
+    cv::Point2f initialPoint(1050, 2350); // или полученная с mouse click
+    // cv::Point2f initialPoint(1080 - 310, 800); // или полученная с mouse click
 #endif
     pointsPrev.push_back(initialPoint);
     cv::circle(frame, initialPoint, 30, cv::Scalar(0, 255, 0), 20); // зелёный круг
 #if !PROCCESSED
-    cv::flip(frame, frame, -1);
+    // cv::flip(frame, frame, -1);
 #endif
 
     cv::imshow("Frame", frame);
@@ -75,7 +77,7 @@ int main()
 
 // Показать кадр (опционально)
 #if !PROCCESSED
-        cv::flip(frame, frame, -1);
+        // cv::flip(frame, frame, -1);
 #endif
         cv::imshow("Frame", frame);
         if (cv::waitKey(30) == 27)
