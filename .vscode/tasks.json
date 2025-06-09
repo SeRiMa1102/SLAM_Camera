@@ -118,6 +118,21 @@
       }
     },
     {
+      "label": "Plot",
+      "options": {
+        "statusbar": {
+            "hide" : false
+        }
+      },
+      "type": "shell",
+      "command": "source .venv/bin/activate && python3 evaluation/plot.py",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "Eva Own",
       "options": {
         "statusbar": {

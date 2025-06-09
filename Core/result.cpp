@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#define PROCCESSED 1
+#define PROCCESSED 0
 
 int main()
 {
@@ -85,8 +85,13 @@ int main()
         pointsPrev = pointsNext;
     }
 
-    // ===== 3. Сохранение графика в файл =====
-    std::ofstream file("displacement.csv");
+// ===== 3. Сохранение графика в файл =====
+#if PROCCESSED
+    std::ofstream file("/home/rinat/SLAM_Camera/displacement_proccessed.csv");
+#else
+    std::ofstream file("/home/rinat/SLAM_Camera/displacement.csv");
+#endif
+
     for (size_t i = 0; i < displacementHistory.size(); ++i) {
         file << i << "," << displacementHistory[i] << "\n";
     }
