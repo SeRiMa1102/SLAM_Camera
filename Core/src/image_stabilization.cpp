@@ -5,9 +5,7 @@
 #include <opencv2/imgproc.hpp>
 #include <ostream>
 
-constexpr size_t numberToAdjustState2 = 5;
-constexpr size_t numberToAdjustState3 = 5;
-constexpr size_t numberToStabilize = 15;
+constexpr size_t numberToStabilize = 30;
 constexpr size_t numberToApproximate = 5;
 constexpr size_t neededNumberOfInliers = 50;
 ImageStabilization::ImageStabilization() {}
@@ -77,8 +75,8 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
 
     update = im.clone();
     static bool flag = false;
-    // if ((result == 2) || (result == 3)) {
-    if (quats_.size() > numberToStabilize) {
+    if (quats_.size() == numberToStabilize) {
+        std::cout << "Stabilization\n";
         cv::Mat stabilizedPrev = previosImage.clone();
 
         if (flag == false) {
@@ -90,6 +88,7 @@ void ImageStabilization::stabilizeImage(const cv::Mat& im)
             std::cout << "first filtered\n";
         }
         // cv::Mat stabilizedPrev;
+        averageCurrentQuaternion_ = average_quaternions(quats_);
         rotateImage(quats_.back(), averageCurrentQuaternion_, im, update, SLAM);
         rotateImage(quats_[quats_.size() - 2], averageCurrentQuaternion_, previosImage, stabilizedPrev, SLAM);
         if (flag == false) {
@@ -116,11 +115,16 @@ void ImageStabilization::updateGraph(int state, Eigen::Quaternionf q)
     // TODO:add moving average
     if (state == 1) {
         reinitFiltraion();
+        return;
     }
 
     if (state == 2) {
         counterState2++;
+        std::cout << "counter++\n";
         quats_.push_back(q);
+        if (counterState2 > numberToStabilize) {
+            quats_.erase(quats_.begin());
+        }
         return;
     }
 
